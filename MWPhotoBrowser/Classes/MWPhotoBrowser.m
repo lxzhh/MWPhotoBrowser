@@ -56,11 +56,8 @@
     } else {
         _isVCBasedStatusBarAppearance = YES; // default
     }
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
-    if (SYSTEM_VERSION_LESS_THAN(@"7")) self.wantsFullScreenLayout = YES;
-#endif
+    self.wantsFullScreenLayout = YES;
     self.hidesBottomBarWhenPushed = YES;
-    _hasBelongedToViewController = NO;
     _photoCount = NSNotFound;
     _previousLayoutBounds = CGRectZero;
     _currentPageIndex = 0;
@@ -73,8 +70,6 @@
     _viewIsActive = NO;
     _enableGrid = YES;
     _startOnGrid = NO;
-    _enableSwipeToDismiss = YES;
-    _delayToHideElements = 5;
     _visiblePages = [[NSMutableSet alloc] init];
     _recycledPages = [[NSMutableSet alloc] init];
     _photos = [[NSMutableArray alloc] init];
@@ -122,7 +117,7 @@
 }
 
 - (void)didReceiveMemoryWarning {
-
+    
 	// Release any cached data, images, etc that aren't in use.
     [self releaseAllUnderlyingPhotos:YES];
 	[_recycledPages removeAllObjects];
@@ -191,13 +186,6 @@
     // Update
     [self reloadData];
     
-    // Swipe to dismiss
-    if (_enableSwipeToDismiss) {
-        UISwipeGestureRecognizer *swipeGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(doneButtonPressed:)];
-        swipeGesture.direction = UISwipeGestureRecognizerDirectionDown | UISwipeGestureRecognizerDirectionUp;
-        [self.view addGestureRecognizer:swipeGesture];
-    }
-    
 	// Super
     [super viewDidLoad];
 	
@@ -244,24 +232,26 @@
         _previousViewControllerBackButton = previousViewController.navigationItem.backBarButtonItem; // remember previous
         previousViewController.navigationItem.backBarButtonItem = newBackButton;
     }
-
+    
     // Toolbar items
     BOOL hasItems = NO;
     UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
     fixedSpace.width = 32; // To balance action button
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     NSMutableArray *items = [[NSMutableArray alloc] init];
-
+    
     // Left button - Grid
     if (_enableGrid) {
         hasItems = YES;
         NSString *buttonName = @"UIBarButtonItemGrid";
         if (SYSTEM_VERSION_LESS_THAN(@"7")) buttonName = @"UIBarButtonItemGridiOS6";
-        [items addObject:[[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"MWPhotoBrowser.bundle/images/%@.png", buttonName]] style:UIBarButtonItemStylePlain target:self action:@selector(showGridAnimated)]];
+        UIBarButtonItem *gridBarButton =  [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"MWPhotoBrowser.bundle/images/%@.png", buttonName]] style:UIBarButtonItemStylePlain target:self action:@selector(showGridAnimated)];
+        [self.navigationItem setRightBarButtonItem:gridBarButton];
+        //        [items addObject:[[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"MWPhotoBrowser.bundle/images/%@.png", buttonName]] style:UIBarButtonItemStylePlain target:self action:@selector(showGridAnimated)]];
     } else {
-        [items addObject:fixedSpace];
+        [self.navigationItem setRightBarButtonItem:nil];
     }
-
+    
     // Middle - Nav
     if (_previousButton && _nextButton && numberOfPhotos > 1) {
         hasItems = YES;
@@ -273,7 +263,7 @@
     } else {
         [items addObject:flexSpace];
     }
-
+    
     // Right - Action
     if (_actionButton && !(!hasItems && !self.navigationItem.rightBarButtonItem)) {
         [items addObject:_actionButton];
@@ -283,9 +273,14 @@
             self.navigationItem.rightBarButtonItem = _actionButton;
         [items addObject:fixedSpace];
     }
-
+    
     // Toolbar visibility
-    [_toolbar setItems:items];
+    if (self.delegate && [self.delegate respondsToSelector:@selector(customBottomBarItems)]) {
+        [_toolbar setItems:[self.delegate customBottomBarItems]];
+    }else{
+        [_toolbar setItems:items];
+    }
+    
     BOOL hideToolbar = YES;
     for (UIBarButtonItem* item in _toolbar.items) {
         if (item != fixedSpace && item != flexSpace) {
@@ -358,20 +353,9 @@
         // If the frame is zero then definitely leave it alone
         _leaveStatusBarAlone = YES;
     }
-    BOOL fullScreen = YES;
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
-    if (SYSTEM_VERSION_LESS_THAN(@"7")) fullScreen = self.wantsFullScreenLayout;
-#endif
-    if (!_leaveStatusBarAlone && fullScreen && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+    if (!_leaveStatusBarAlone && self.wantsFullScreenLayout && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
         _previousStatusBarStyle = [[UIApplication sharedApplication] statusBarStyle];
-        if (SYSTEM_VERSION_LESS_THAN(@"7")) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:animated];
-#pragma clang diagnostic push
-        } else {
-            [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:animated];
-        }
+        [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:animated];
     }
     
     // Navigation bar appearance
@@ -379,6 +363,10 @@
         [self storePreviousNavBarAppearance];
     }
     [self setNavBarAppearance:animated];
+    
+    // Hide navigation controller's toolbar
+    _previousNavToolbarHidden = self.navigationController.toolbarHidden;
+    [self.navigationController setToolbarHidden:YES];
     
     // Update UI
 	[self hideControlsAfterDelay];
@@ -390,7 +378,7 @@
         }
         _viewHasAppearedInitially = YES;
     }
-
+    
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -413,13 +401,12 @@
     [self setControlsHidden:NO animated:NO permanent:YES];
     
     // Status bar
-    BOOL fullScreen = YES;
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
-    if (SYSTEM_VERSION_LESS_THAN(@"7")) fullScreen = self.wantsFullScreenLayout;
-#endif
-    if (!_leaveStatusBarAlone && fullScreen && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+    if (!_leaveStatusBarAlone && self.wantsFullScreenLayout && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
         [[UIApplication sharedApplication] setStatusBarStyle:_previousStatusBarStyle animated:animated];
     }
+    
+    // Show navigation controller's toolbar
+    [self.navigationController setToolbarHidden:_previousNavToolbarHidden];
     
 	// Super
 	[super viewWillDisappear:animated];
@@ -429,16 +416,6 @@
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     _viewIsActive = YES;
-}
-
-- (void)willMoveToParentViewController:(UIViewController *)parent {
-    if (parent && _hasBelongedToViewController) {
-        [NSException raise:@"MWPhotoBrowser Instance Reuse" format:@"MWPhotoBrowser instances cannot be reused."];
-    }
-}
-
-- (void)didMoveToParentViewController:(UIViewController *)parent {
-    if (!parent) _hasBelongedToViewController = YES;
 }
 
 #pragma mark - Nav Bar Appearance
@@ -544,7 +521,7 @@
             [page setMaxMinZoomScalesForCurrentBounds];
             _previousLayoutBounds = self.view.bounds;
         }
-
+        
 	}
 	
 	// Adjust contentOffset to preserve page location based on values collected prior to location
@@ -623,22 +600,20 @@
         [_photos addObject:[NSNull null]];
         [_thumbPhotos addObject:[NSNull null]];
     }
-
-    // Update current page index
-    if (numberOfPhotos > 0) {
-        _currentPageIndex = MAX(0, MIN(_currentPageIndex, numberOfPhotos - 1));
-    } else {
-        _currentPageIndex = 0;
+    
+    // Remove everything
+    while (_pagingScrollView.subviews.count) {
+        [[_pagingScrollView.subviews lastObject] removeFromSuperview];
     }
     
-    // Update layout
-    if ([self isViewLoaded]) {
-        while (_pagingScrollView.subviews.count) {
-            [[_pagingScrollView.subviews lastObject] removeFromSuperview];
-        }
-        [self performLayout];
-        [self.view setNeedsLayout];
-    }
+    // Update current page index
+    _currentPageIndex = MAX(0, MIN(_currentPageIndex, numberOfPhotos - 1));
+    
+    // Update
+    [self performLayout];
+    
+    // Layout
+    [self.view setNeedsLayout];
     
 }
 
@@ -741,7 +716,7 @@
                 id <MWPhoto> photo = [self photoAtIndex:pageIndex-1];
                 if (![photo underlyingImage]) {
                     [photo loadUnderlyingImageAndNotify];
-                    MWLog(@"Pre-loading image at index %lu", (unsigned long)pageIndex-1);
+                    MWLog(@"Pre-loading image at index %i", pageIndex-1);
                 }
             }
             if (pageIndex < [self numberOfPhotos] - 1) {
@@ -749,7 +724,7 @@
                 id <MWPhoto> photo = [self photoAtIndex:pageIndex+1];
                 if (![photo underlyingImage]) {
                     [photo loadUnderlyingImageAndNotify];
-                    MWLog(@"Pre-loading image at index %lu", (unsigned long)pageIndex+1);
+                    MWLog(@"Pre-loading image at index %i", pageIndex+1);
                 }
             }
         }
@@ -800,7 +775,7 @@
             [page.selectedButton removeFromSuperview];
             [page prepareForReuse];
 			[page removeFromSuperview];
-			MWLog(@"Removed page at index %lu", (unsigned long)pageIndex);
+			MWLog(@"Removed page at index %i", PAGE_INDEX(page));
 		}
 	}
 	[_visiblePages minusSet:_recycledPages];
@@ -818,9 +793,9 @@
 			}
 			[_visiblePages addObject:page];
 			[self configurePage:page forIndex:index];
-
+            
 			[_pagingScrollView addSubview:page];
-			MWLog(@"Added page at index %lu", (unsigned long)index);
+			MWLog(@"Added page at index %i", index);
             
             // Add caption
             MWCaptionView *captionView = [self captionViewForPhotoAtIndex:index];
@@ -912,12 +887,12 @@
     NSUInteger i;
     if (index > 0) {
         // Release anything < index - 1
-        for (i = 0; i < index-1; i++) { 
+        for (i = 0; i < index-1; i++) {
             id photo = [_photos objectAtIndex:i];
             if (photo != [NSNull null]) {
                 [photo unloadUnderlyingImage];
                 [_photos replaceObjectAtIndex:i withObject:[NSNull null]];
-                MWLog(@"Released underlying image at index %lu", (unsigned long)i);
+                MWLog(@"Released underlying image at index %i", i);
             }
         }
     }
@@ -928,7 +903,7 @@
             if (photo != [NSNull null]) {
                 [photo unloadUnderlyingImage];
                 [_photos replaceObjectAtIndex:i withObject:[NSNull null]];
-                MWLog(@"Released underlying image at index %lu", (unsigned long)i);
+                MWLog(@"Released underlying image at index %i", i);
             }
         }
     }
@@ -1010,12 +985,8 @@
         UINavigationBar *navBar = self.navigationController.navigationBar;
         yOffset = navBar.frame.origin.y + navBar.frame.size.height;
     }
-    CGFloat statusBarOffset = [[UIApplication sharedApplication] statusBarFrame].size.height;
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
-    if (SYSTEM_VERSION_LESS_THAN(@"7") && !self.wantsFullScreenLayout) statusBarOffset = 0;
-#endif
     CGRect captionFrame = CGRectMake(pageFrame.origin.x + pageFrame.size.width - 20 - selectedButton.frame.size.width,
-                                     statusBarOffset + yOffset,
+                                     20 + yOffset,
                                      selectedButton.frame.size.width,
                                      selectedButton.frame.size.height);
     return CGRectIntegral(captionFrame);
@@ -1073,11 +1044,7 @@
             self.title = [NSString stringWithFormat:@"%lu %@", (unsigned long)numberOfPhotos, photosText];
         }
     } else if (numberOfPhotos > 1) {
-        if ([_delegate respondsToSelector:@selector(photoBrowser:titleForPhotoAtIndex:)]) {
-            self.title = [_delegate photoBrowser:self titleForPhotoAtIndex:_currentPageIndex];
-        } else {
-            self.title = [NSString stringWithFormat:@"%lu %@ %lu", (unsigned long)(_currentPageIndex+1), NSLocalizedString(@"of", @"Used in the context: 'Showing 1 of 3 items'"), (unsigned long)numberOfPhotos];
-        }
+		self.title = [NSString stringWithFormat:@"%lu %@ %lu", (unsigned long)(_currentPageIndex+1), NSLocalizedString(@"of", @"Used in the context: 'Showing 1 of 3 items'"), (unsigned long)numberOfPhotos];
 	} else {
 		self.title = nil;
 	}
@@ -1142,7 +1109,7 @@
 }
 
 - (void)showGrid:(BOOL)animated {
-
+    
     if (_gridController) return;
     
     // Init grid controller
@@ -1151,8 +1118,8 @@
     _gridController.browser = self;
     _gridController.selectionMode = _displaySelectionButtons;
     _gridController.view.frame = self.view.bounds;
-    _gridController.view.frame = CGRectOffset(_gridController.view.frame, 0, (self.startOnGrid ? -1 : 1) * self.view.bounds.size.height);
-
+    _gridController.view.frame = CGRectOffset(_gridController.view.frame, 0, self.view.bounds.size.height);
+    
     // Stop specific layout being triggered
     _skipNextPagingScrollViewPositioning = YES;
     
@@ -1176,7 +1143,7 @@
     [UIView animateWithDuration:animated ? 0.3 : 0 animations:^(void) {
         _gridController.view.frame = self.view.bounds;
         CGRect newPagingFrame = [self frameForPagingScrollView];
-        newPagingFrame = CGRectOffset(newPagingFrame, 0, (self.startOnGrid ? 1 : -1) * newPagingFrame.size.height);
+        newPagingFrame = CGRectOffset(newPagingFrame, 0, -newPagingFrame.size.height);
         _pagingScrollView.frame = newPagingFrame;
     } completion:^(BOOL finished) {
         [_gridController didMoveToParentViewController:self];
@@ -1198,7 +1165,7 @@
     
     // Position prior to hide animation
     CGRect newPagingFrame = [self frameForPagingScrollView];
-    newPagingFrame = CGRectOffset(newPagingFrame, 0, (self.startOnGrid ? 1 : -1) * newPagingFrame.size.height);
+    newPagingFrame = CGRectOffset(newPagingFrame, 0, -newPagingFrame.size.height);
     _pagingScrollView.frame = newPagingFrame;
     
     // Remember and remove controller now so things can detect a nil grid controller
@@ -1211,7 +1178,7 @@
     
     // Animate, hide grid and show paging scroll view
     [UIView animateWithDuration:0.3 animations:^{
-        tmpGridController.view.frame = CGRectOffset(self.view.bounds, 0, (self.startOnGrid ? -1 : 1) * self.view.bounds.size.height);
+        tmpGridController.view.frame = CGRectOffset(self.view.bounds, 0, self.view.bounds.size.height);
         _pagingScrollView.frame = [self frameForPagingScrollView];
     } completion:^(BOOL finished) {
         [tmpGridController willMoveToParentViewController:nil];
@@ -1219,7 +1186,7 @@
         [tmpGridController removeFromParentViewController];
         [self setControlsHidden:NO animated:YES permanent:NO]; // retrigger timer
     }];
-
+    
 }
 
 #pragma mark - Control Hiding / Showing
@@ -1244,7 +1211,6 @@
     if (!_leaveStatusBarAlone) {
         if ([self respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
             
-            // iOS 7
             // Hide status bar
             if (!_isVCBasedStatusBarAppearance) {
                 
@@ -1260,16 +1226,11 @@
                 } completion:^(BOOL finished) {}];
                 
             }
-
+            
         } else {
             
-            // iOS < 7
             // Status bar and nav bar positioning
-            BOOL fullScreen = YES;
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
-            if (SYSTEM_VERSION_LESS_THAN(@"7")) fullScreen = self.wantsFullScreenLayout;
-#endif
-            if (fullScreen) {
+            if (self.wantsFullScreenLayout) {
                 
                 // Need to get heights and set nav bar position to overcome display issues
                 
@@ -1321,7 +1282,7 @@
     [UIView animateWithDuration:animationDuration animations:^(void) {
         
         CGFloat alpha = hidden ? 0 : 1;
-
+        
         // Nav bar slides up on it's own on iOS 7
         [self.navigationController.navigationBar setAlpha:alpha];
         
@@ -1331,7 +1292,7 @@
             if (hidden) _toolbar.frame = CGRectOffset(_toolbar.frame, 0, animatonOffset);
         }
         _toolbar.alpha = alpha;
-
+        
         // Captions
         for (MWZoomingScrollView *page in _visiblePages) {
             if (page.captionView) {
@@ -1356,7 +1317,7 @@
                 v.frame = newFrame;
             }
         }
-
+        
     } completion:^(BOOL finished) {}];
     
 	// Control hiding timer
@@ -1390,7 +1351,7 @@
 - (void)hideControlsAfterDelay {
 	if (![self areControlsHidden]) {
         [self cancelControlHiding];
-		_controlVisibilityTimer = [NSTimer scheduledTimerWithTimeInterval:self.delayToHideElements target:self selector:@selector(hideControls) userInfo:nil repeats:NO];
+		_controlVisibilityTimer = [NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(hideControls) userInfo:nil repeats:NO];
 	}
 }
 
@@ -1407,13 +1368,8 @@
 
 - (void)setCurrentPhotoIndex:(NSUInteger)index {
     // Validate
-    NSUInteger photoCount = [self numberOfPhotos];
-    if (photoCount == 0) {
-        index = 0;
-    } else {
-        if (index >= photoCount)
-            index = [self numberOfPhotos]-1;
-    }
+    if (index >= [self numberOfPhotos])
+        index = [self numberOfPhotos]-1;
     _currentPageIndex = index;
 	if ([self isViewLoaded]) {
         [self jumpToPageAtIndex:index animated:NO];
@@ -1425,26 +1381,7 @@
 #pragma mark - Misc
 
 - (void)doneButtonPressed:(id)sender {
-    // Only if we're modal and there's a done button
-    if (_doneButton) {
-        // See if we actually just want to show/hide grid
-        if (self.enableGrid) {
-            if (self.startOnGrid && !_gridController) {
-                [self showGrid:YES];
-                return;
-            } else if (!self.startOnGrid && _gridController) {
-                [self hideGrid];
-                return;
-            }
-        }
-        // Dismiss view controller
-        if ([_delegate respondsToSelector:@selector(photoBrowserDidFinishModalPresentation:)]) {
-            // Call delegate method and let them dismiss us
-            [_delegate photoBrowserDidFinishModalPresentation:self];
-        } else  {
-            [self dismissViewControllerAnimated:YES completion:nil];
-        }
-    }
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 #pragma mark - Actions
@@ -1475,12 +1412,12 @@
                     // Old handling of activities with action sheet
                     if ([MFMailComposeViewController canSendMail]) {
                         _actionsSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self
-                                                               cancelButtonTitle:NSLocalizedString(@"Cancel", nil) destructiveButtonTitle:nil
-                                                               otherButtonTitles:NSLocalizedString(@"Save", nil), NSLocalizedString(@"Copy", nil), NSLocalizedString(@"Email", nil), nil];
+                                                           cancelButtonTitle:NSLocalizedString(@"Cancel", nil) destructiveButtonTitle:nil
+                                                           otherButtonTitles:NSLocalizedString(@"Save", nil), NSLocalizedString(@"Copy", nil), NSLocalizedString(@"Email", nil), nil];
                     } else {
                         _actionsSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self
-                                                               cancelButtonTitle:NSLocalizedString(@"Cancel", nil) destructiveButtonTitle:nil
-                                                               otherButtonTitles:NSLocalizedString(@"Save", nil), NSLocalizedString(@"Copy", nil), nil];
+                                                           cancelButtonTitle:NSLocalizedString(@"Cancel", nil) destructiveButtonTitle:nil
+                                                           otherButtonTitles:NSLocalizedString(@"Save", nil), NSLocalizedString(@"Copy", nil), nil];
                     }
                     _actionsSheet.tag = ACTION_SHEET_OLD_ACTIONS;
                     _actionsSheet.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
@@ -1507,7 +1444,7 @@
                             [self showProgressHUDWithMessage:nil];
                         }
                     });
-
+                    
                     // Show
                     typeof(self) __weak weakSelf = self;
                     [self.activityViewController setCompletionHandler:^(NSString *activityType, BOOL completed) {
@@ -1523,7 +1460,7 @@
             
             // Keep controls hidden
             [self setControlsHidden:NO animated:YES permanent:YES];
-
+            
         }
     }
 }
@@ -1538,7 +1475,7 @@
             if (buttonIndex == actionSheet.firstOtherButtonIndex) {
                 [self savePhoto]; return;
             } else if (buttonIndex == actionSheet.firstOtherButtonIndex + 1) {
-                [self copyPhoto]; return;	
+                [self copyPhoto]; return;
             } else if (buttonIndex == actionSheet.firstOtherButtonIndex + 2) {
                 [self emailPhoto]; return;
             }
@@ -1599,7 +1536,7 @@
 
 - (void)actuallySavePhoto:(id<MWPhoto>)photo {
     if ([photo underlyingImage]) {
-        UIImageWriteToSavedPhotosAlbum([photo underlyingImage], self, 
+        UIImageWriteToSavedPhotosAlbum([photo underlyingImage], self,
                                        @selector(image:didFinishSavingWithError:contextInfo:), nil);
     }
 }
@@ -1643,7 +1580,7 @@
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
             emailer.modalPresentationStyle = UIModalPresentationPageSheet;
         }
-        [self presentViewController:emailer animated:YES completion:nil];
+        [self presentModalViewController:emailer animated:YES];
         [self hideProgressHUD:NO];
     }
 }
@@ -1651,8 +1588,8 @@
 - (void)mailComposeController:(MFMailComposeViewController*)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError*)error {
     if (result == MFMailComposeResultFailed) {
 		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Email", nil)
-                                                         message:NSLocalizedString(@"Email failed to send. Please try again.", nil)
-                                                        delegate:nil cancelButtonTitle:NSLocalizedString(@"Dismiss", nil) otherButtonTitles:nil];
+                                                        message:NSLocalizedString(@"Email failed to send. Please try again.", nil)
+                                                       delegate:nil cancelButtonTitle:NSLocalizedString(@"Dismiss", nil) otherButtonTitles:nil];
 		[alert show];
     }
     [self dismissViewControllerAnimated:YES completion:nil];
