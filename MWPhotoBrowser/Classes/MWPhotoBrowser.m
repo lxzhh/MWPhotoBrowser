@@ -284,6 +284,13 @@
         [items addObject:fixedSpace];
     }
 
+	// Toolbar visibility
+    if (self.delegate && [self.delegate respondsToSelector:@selector(customBottomBarItems)]) {
+        [_toolbar setItems:[self.delegate customBottomBarItems]];
+    }else{
+        [_toolbar setItems:items];
+    }
+
     // Toolbar visibility
     [_toolbar setItems:items];
     BOOL hideToolbar = YES;
