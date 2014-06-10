@@ -292,7 +292,7 @@
     }
 
     // Toolbar visibility
-    [_toolbar setItems:items];
+    //[_toolbar setItems:items];
     BOOL hideToolbar = YES;
     for (UIBarButtonItem* item in _toolbar.items) {
         if (item != fixedSpace && item != flexSpace) {
