@@ -16,7 +16,7 @@
 #define ACTION_SHEET_OLD_ACTIONS 2000
 
 @implementation MWPhotoBrowser
-
+@synthesize bottomToolBar = _toolbar;
 #pragma mark - Init
 
 - (id)init {
@@ -1244,7 +1244,11 @@
 // If permanent then we don't set timers to hide again
 // Fades all controls on iOS 5 & 6, and iOS 7 controls slide and fade
 - (void)setControlsHidden:(BOOL)hidden animated:(BOOL)animated permanent:(BOOL)permanent {
-    
+    if (hidden) {
+        if ([self.delegate respondsToSelector:@selector(photoBrowser:willHideControlsAtIndex:)]) {
+            [self.delegate photoBrowser:self willHideControlsAtIndex:self.currentIndex];
+        }
+    }
     // Force visible
     if (![self numberOfPhotos] || _gridController || _alwaysShowControls)
         hidden = NO;
@@ -1407,13 +1411,18 @@
 - (void)hideControlsAfterDelay {
 	if (![self areControlsHidden]) {
         [self cancelControlHiding];
-		_controlVisibilityTimer = [NSTimer scheduledTimerWithTimeInterval:self.delayToHideElements target:self selector:@selector(hideControls) userInfo:nil repeats:NO];
+        //		_controlVisibilityTimer = [NSTimer scheduledTimerWithTimeInterval:self.delayToHideElements target:self selector:@selector(hideControls) userInfo:nil repeats:NO];
 	}
 }
 
 - (BOOL)areControlsHidden { return (_toolbar.alpha == 0); }
-- (void)hideControls { [self setControlsHidden:YES animated:YES permanent:NO]; }
-- (void)toggleControls { [self setControlsHidden:![self areControlsHidden] animated:YES permanent:NO]; }
+- (void)hideControls {
+    [self setControlsHidden:YES animated:YES permanent:NO];
+    
+}
+- (void)toggleControls {
+    [self setControlsHidden:![self areControlsHidden] animated:YES permanent:NO];
+}
 
 #pragma mark - Properties
 

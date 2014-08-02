@@ -36,6 +36,7 @@
 - (BOOL)photoBrowser:(MWPhotoBrowser *)photoBrowser isPhotoSelectedAtIndex:(NSUInteger)index;
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser photoAtIndex:(NSUInteger)index selectedChanged:(BOOL)selected;
 - (void)photoBrowserDidFinishModalPresentation:(MWPhotoBrowser *)photoBrowser;
+- (void)photoBrowser:(MWPhotoBrowser *)photoBrowser willHideControlsAtIndex:(NSUInteger)index;
 
 - (NSArray *)customBottomBarItems;
 @end
@@ -53,7 +54,8 @@
 @property (nonatomic) BOOL startOnGrid;
 @property (nonatomic) NSUInteger delayToHideElements;
 @property (nonatomic, readonly) NSUInteger currentIndex;
-
+@property (nonatomic, strong) UIToolbar *bottomToolBar;
+@property (nonatomic, strong)UIScrollView *pagingScrollView;
 // Init
 - (id)initWithPhotos:(NSArray *)photosArray  __attribute__((deprecated("Use initWithDelegate: instead"))); // Depreciated
 - (id)initWithDelegate:(id <MWPhotoBrowserDelegate>)delegate;

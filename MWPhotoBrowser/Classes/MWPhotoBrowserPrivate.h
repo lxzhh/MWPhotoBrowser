@@ -21,7 +21,7 @@
 	NSArray *_depreciatedPhotoData; // Depreciated
 	
 	// Views
-	UIScrollView *_pagingScrollView;
+    //	UIScrollView *_pagingScrollView;
 	
 	// Paging & layout
 	NSMutableSet *_visiblePages, *_recycledPages;
@@ -31,7 +31,7 @@
 	NSUInteger _pageIndexBeforeRotation;
 	
 	// Navigation & controls
-	UIToolbar *_toolbar;
+    //	UIToolbar *_toolbar;
 	NSTimer *_controlVisibilityTimer;
 	UIBarButtonItem *_previousButton, *_nextButton, *_actionButton, *_doneButton,*_gridButton;
     MBProgressHUD *_progressHUD;
