@@ -274,6 +274,7 @@
                                          (imageSize.height * self.zoomScale - boundsSize.height) / 2.0);
         // Disable scrolling initially until the first pinch to fix issues with swiping on an initally zoomed in photo
         self.scrollEnabled = NO;
+        [self setZoomScale:minScale animated:NO];
     }
     
     // Layout
