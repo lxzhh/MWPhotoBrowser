@@ -90,6 +90,11 @@
 
 - (void)handleLongPress:(UILongPressGestureRecognizer *)longPress
 {
+    if (longPress.state != UIGestureRecognizerStateBegan)
+    {
+        return;
+    }
+    
     if (_tapDelegate && [_tapDelegate respondsToSelector:@selector(longPressDetectedOnImageView:)])
     {
         [_tapDelegate longPressDetectedOnImageView:self];
