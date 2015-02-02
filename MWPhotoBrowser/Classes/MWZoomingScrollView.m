@@ -411,4 +411,10 @@
     [self handleDoubleTap:CGPointMake(touchX, touchY)];
 }
 
+- (void)longPressDetectedOnImageView:(UIImageView *)imageView
+{
+    [_photoBrowser performSelector:@selector(savePhoto) withObject:nil afterDelay:0.2];
+}
+
+
 @end
