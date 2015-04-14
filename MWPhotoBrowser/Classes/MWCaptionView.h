@@ -10,6 +10,7 @@
 #import "MWPhotoProtocol.h"
 
 @interface MWCaptionView : UIToolbar
+@property (nonatomic, weak) id <MWPhoto> photo;
 
 // Init
 - (id)initWithPhoto:(id<MWPhoto>)photo;
