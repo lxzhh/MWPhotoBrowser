@@ -12,11 +12,10 @@
 
 static const CGFloat labelPadding = 10;
 
-// Private
-@interface MWCaptionView () {
-    id <MWPhoto> _photo;
-    UILabel *_label;    
-}
+@interface MWCaptionView ()
+@property (nonatomic, weak) id <MWPhoto> photo;
+@property (nonatomic, strong) UILabel *label;
+
 @end
 
 @implementation MWCaptionView
@@ -25,7 +24,7 @@ static const CGFloat labelPadding = 10;
     self = [super initWithFrame:CGRectMake(0, 0, 320, 44)]; // Random initial frame
     if (self) {
         self.userInteractionEnabled = NO;
-        _photo = photo;
+        self.photo = photo;
         if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"7")) {
             // Use iOS 7 blurry goodness
             self.barStyle = UIBarStyleBlackTranslucent;
