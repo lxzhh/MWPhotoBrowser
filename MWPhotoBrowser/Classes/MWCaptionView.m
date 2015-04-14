@@ -69,36 +69,42 @@ static const CGFloat labelPadding = 10;
     return CGSizeMake(size.width, textSize.height + labelPadding * 2);
 }
 
-- (void)setupCaption {
-    _label = [[UILabel alloc] initWithFrame:CGRectIntegral(CGRectMake(labelPadding, 0,
-                                                       self.bounds.size.width-labelPadding*2,
-                                                       self.bounds.size.height))];
-    _label.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    _label.opaque = NO;
-    _label.backgroundColor = [UIColor clearColor];
-    if (SYSTEM_VERSION_LESS_THAN(@"6")) {
+- (void)setupCaption
+{
+    if (!_label)
+    {
+        _label = [[UILabel alloc] initWithFrame:CGRectIntegral(CGRectMake(labelPadding, 0,
+                                                                          self.bounds.size.width-labelPadding*2,
+                                                                          self.bounds.size.height))];
+        _label.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+        _label.opaque = NO;
+        _label.backgroundColor = [UIColor clearColor];
+        if (SYSTEM_VERSION_LESS_THAN(@"6")) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        _label.textAlignment = UITextAlignmentCenter;
-        _label.lineBreakMode = UILineBreakModeWordWrap;
+            _label.textAlignment = UITextAlignmentCenter;
+            _label.lineBreakMode = UILineBreakModeWordWrap;
 #pragma clang diagnostic pop
-    } else {
-        _label.textAlignment = NSTextAlignmentCenter;
-        _label.lineBreakMode = NSLineBreakByWordWrapping;
+        } else {
+            _label.textAlignment = NSTextAlignmentCenter;
+            _label.lineBreakMode = NSLineBreakByWordWrapping;
+        }
+        
+        _label.numberOfLines = 0;
+        _label.textColor = [UIColor whiteColor];
+        if (SYSTEM_VERSION_LESS_THAN(@"7")) {
+            // Shadow on 6 and below
+            _label.shadowColor = [UIColor blackColor];
+            _label.shadowOffset = CGSizeMake(1, 1);
+        }
+        _label.font = [UIFont systemFontOfSize:17];
+        
+        [self addSubview:_label];
     }
-
-    _label.numberOfLines = 0;
-    _label.textColor = [UIColor whiteColor];
-    if (SYSTEM_VERSION_LESS_THAN(@"7")) {
-        // Shadow on 6 and below
-        _label.shadowColor = [UIColor blackColor];
-        _label.shadowOffset = CGSizeMake(1, 1);
-    }
-    _label.font = [UIFont systemFontOfSize:17];
+    
     if ([_photo respondsToSelector:@selector(caption)]) {
         _label.text = [_photo caption] ? [_photo caption] : @" ";
     }
-    [self addSubview:_label];
 }
 
 

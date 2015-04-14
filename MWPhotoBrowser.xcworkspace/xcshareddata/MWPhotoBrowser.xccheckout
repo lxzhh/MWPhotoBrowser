@@ -10,6 +10,8 @@
 	<string>MWPhotoBrowser</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
+		<key>9F9B14DA276794D9192F387F0CC62561009373D0</key>
+		<string>https://github.com/NSFish/MWPhotoBrowser.git</string>
 		<key>EA771B0D-4AF1-4D7D-9ACC-1A3400F3D936</key>
 		<string>https://github.com/lxzhh/MWPhotoBrowser.git</string>
 	</dict>
@@ -17,17 +19,27 @@
 	<string>MWPhotoBrowser.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>EA771B0D-4AF1-4D7D-9ACC-1A3400F3D936</key>
+		<key>9F9B14DA276794D9192F387F0CC62561009373D0</key>
 		<string>..</string>
+		<key>EA771B0D-4AF1-4D7D-9ACC-1A3400F3D936</key>
+		<string>.._lxzhh</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>https://github.com/lxzhh/MWPhotoBrowser.git</string>
+	<string>https://github.com/NSFish/MWPhotoBrowser.git</string>
 	<key>IDESourceControlProjectVersion</key>
-	<integer>110</integer>
+	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>EA771B0D-4AF1-4D7D-9ACC-1A3400F3D936</string>
+	<string>9F9B14DA276794D9192F387F0CC62561009373D0</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>9F9B14DA276794D9192F387F0CC62561009373D0</string>
+			<key>IDESourceControlWCCName</key>
+			<string>MWPhotoBrowser</string>
+		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>

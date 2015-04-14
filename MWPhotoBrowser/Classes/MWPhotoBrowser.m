@@ -651,7 +651,23 @@
         [self performLayout];
         [self.view setNeedsLayout];
     }
+}
+
+- (void)roloadPhotoAtIndex:(NSInteger)index
+{
+    if (index < 0 || index >= _photos.count || !([_delegate respondsToSelector:(@selector(photoBrowser:photoAtIndex:))]))
+    {
+        return;
+    }
     
+    id<MWPhoto> photo = _photos[index];
+    [photo unloadUnderlyingImage];
+    
+    id<MWPhoto> newPhoto = [_delegate photoBrowser:self photoAtIndex:index];
+    [_photos replaceObjectAtIndex:index withObject:newPhoto];
+    MWZoomingScrollView *pageView = [self pageDisplayedAtIndex:index];
+    pageView.captionView.photo = newPhoto;
+    [pageView.captionView setupCaption];
 }
 
 - (NSUInteger)numberOfPhotos {
