@@ -13,7 +13,6 @@
 static const CGFloat labelPadding = 10;
 
 @interface MWCaptionView ()
-@property (nonatomic, weak) id <MWPhoto> photo;
 @property (nonatomic, strong) UILabel *label;
 
 @end
