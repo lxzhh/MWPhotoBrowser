@@ -653,7 +653,7 @@
     }
 }
 
-- (void)roloadPhotoAtIndex:(NSInteger)index
+- (void)reloadPhotoAtIndex:(NSInteger)index
 {
     if (index < 0 || index >= _photos.count || !([_delegate respondsToSelector:(@selector(photoBrowser:photoAtIndex:))]))
     {
@@ -661,11 +661,13 @@
     }
     
     id<MWPhoto> photo = _photos[index];
-    [photo unloadUnderlyingImage];
-    
     id<MWPhoto> newPhoto = [_delegate photoBrowser:self photoAtIndex:index];
+    newPhoto.underlyingImage = photo.underlyingImage;
+    
     [_photos replaceObjectAtIndex:index withObject:newPhoto];
+    
     MWZoomingScrollView *pageView = [self pageDisplayedAtIndex:index];
+    [self configurePage:pageView forIndex:index];
     pageView.captionView.photo = newPhoto;
     [pageView.captionView setupCaption];
 }
