@@ -350,6 +350,7 @@
     if (!self.failureLabel.hidden)
     {
         CGRect frame = self.failureLabel.frame;
+        frame.size.width = self.frame.size.width;
         frame.origin.y = _photoImageView.frame.origin.y + _photoImageView.frame.size.height + 10;
         self.failureLabel.frame = frame;
     }
