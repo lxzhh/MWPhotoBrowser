@@ -653,7 +653,7 @@
     }
 }
 
-- (void)reloadPhotoAtIndex:(NSInteger)index
+- (void)reloadPhotoAtIndex:(NSInteger)index inheritImage:(BOOL)inheritImage
 {
     if (index < 0 || index >= _photos.count || !([_delegate respondsToSelector:(@selector(photoBrowser:photoAtIndex:))]))
     {
@@ -662,7 +662,10 @@
     
     id<MWPhoto> photo = _photos[index];
     id<MWPhoto> newPhoto = [_delegate photoBrowser:self photoAtIndex:index];
-    newPhoto.underlyingImage = photo.underlyingImage;
+    if (inheritImage)
+    {
+        newPhoto.underlyingImage = photo.underlyingImage;
+    }
     
     [_photos replaceObjectAtIndex:index withObject:newPhoto];
     
