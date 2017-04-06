@@ -673,6 +673,8 @@
     [self configurePage:pageView forIndex:index];
     pageView.captionView.photo = newPhoto;
     [pageView.captionView setupCaption];
+    
+    [self didStartViewingPageAtIndex:index];
 }
 
 - (NSUInteger)numberOfPhotos {
