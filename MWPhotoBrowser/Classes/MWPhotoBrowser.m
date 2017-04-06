@@ -674,7 +674,7 @@
     pageView.captionView.photo = newPhoto;
     [pageView.captionView setupCaption];
     
-    [self didStartViewingPageAtIndex:index];
+    [_delegate photoBrowser:self didDisplayPhotoAtIndex:index];
 }
 
 - (NSUInteger)numberOfPhotos {
