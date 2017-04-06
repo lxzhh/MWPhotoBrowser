@@ -78,13 +78,8 @@
 		self.showsVerticalScrollIndicator = NO;
 		self.decelerationRate = UIScrollViewDecelerationRateFast;
 		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        
-        self.failureLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 300, self.frame.size.width, 66)];
-        self.failureLabel.numberOfLines = 2;
-        self.failureLabel.textColor = [UIColor colorWithRed:64 green:64 blue:64 alpha:1.f];
-        self.failureLabel.textAlignment = NSTextAlignmentCenter;
-        [self addSubview:self.failureLabel];
     }
+    
     return self;
 }
 
@@ -99,9 +94,6 @@
     self.selectedButton = nil;
     _photoImageView.image = nil;
     _index = NSUIntegerMax;
-    
-    self.failureLabel.text = nil;
-    self.failureLabel.hidden = YES;
 }
 
 #pragma mark - Image
@@ -118,18 +110,9 @@
     if (img)
     {
         [self displayImage];
-        
-        if (_photo.failureReason)
-        {
-            self.failureLabel.hidden = NO;
-            self.failureLabel.text = _photo.failureReason;
-        }
     }
     else
     {
-        self.failureLabel.hidden = YES;
-        self.failureLabel.text = nil;
-        
         // Will be loading so show loading
         [self showLoadingIndicator];
     }
@@ -347,14 +330,6 @@
 	// Center
 	if (!CGRectEqualToRect(_photoImageView.frame, frameToCenter))
 		_photoImageView.frame = frameToCenter;
-	
-    if (!self.failureLabel.hidden)
-    {
-        CGRect frame = self.failureLabel.frame;
-        frame.size.width = self.frame.size.width;
-        frame.origin.y = _photoImageView.frame.origin.y + _photoImageView.frame.size.height + 10;
-        self.failureLabel.frame = frame;
-    }
 }
 
 #pragma mark - UIScrollViewDelegate
