@@ -1259,7 +1259,11 @@
         [tmpGridController removeFromParentViewController];
         [self setControlsHidden:NO animated:YES permanent:NO]; // retrigger timer
     }];
-    
+}
+
+- (UICollectionView *)collectionView
+{
+    return (UICollectionView *)_gridController.collectionView;
 }
 
 #pragma mark - Control Hiding / Showing
